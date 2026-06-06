@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV整形・表示ツール</title>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VM2F4EXDKJ"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+  
+        gtag('config', 'G-VM2F4EXDKJ');
+    </script>
+</head>
+
+<body>
+    <h1>CSV整形・表示ツール</h1>
+    <form id="uploadForm"></form>
+        <div>
+            <label for="faculty"><b>学部</b></label>
+            <select name="faculty" id="faculty" required>
+                <option value="">学部を選択してください</option>
+                <option value="engineering">総合理工学部</option>
+                <option value="material">材料エネルギー学部</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="grade"><b>入学年度</b></label>
+            <select name="grade" id="grade" required>
+                <option value="">入学年度を選択してください</option>
+                <option value="2023">2023年度</option>
+                <option value="2024">2024年度</option>
+                <option value="2025">2025年度</option>
+            </select>
+        </div>
+
+        <label for="csvFile">ファイルをアップロードする!</label>
+        <input type="file" id="csvFile" accept=".csv">
+        <button onclick="uploadCsv()">整形する!</button>
+    </form>
+
+    <div id="resultArea"></div>
+
+
+    <section aria-labelledby="howto" style="margin-top:18px">
+        <h3 id="howto">使い方</h3>
+        <p>学部と入学年度を選択し、CSVファイルをアップロードしてください。授業区分ごとに取得単位を分類し合計単位を表示します。</p>
+        <figure>
+            <img src="sample.png" alt="出力イメージ" style="max-width: 100%; height: auto;">
+            <figcaption>▲出力イメージ</figcaption>
+        </figure>
+        <p>現時点では、2023~2025年度入学の総合理工学部と材料エネルギー学部に対応しています。</p>
+        <p>CSVファイルは<a href="https://gkm2019-web2.shimane-u.ac.jp/campusweb/campusportal.do" target="_blank" rel="noopener noreferrer">Campus Square</a>にログインして<b>成績</b>を開き、<button class="ex">ファイルに出力する</button>をクリック→<button class="ex">ファイル出力を開始</button>を押して取得してください。</p>
+    </section>
+
+    <section aria-labelledby="note" style="margin-top:12px">
+        <h3 id="note">注意事項</h3>
+        <div><strong>・本アプリは非公式アプリです。</strong></div>
+        <div><strong>・テストデータにより確認を行っていますが、出力結果の正確性について保証するものではありません。</strong></div>
+    </section>
+    <br>
+    <div>お問い合わせは<a href="https://docs.google.com/forms/d/e/1FAIpQLSfozs2VH2MXGQNDvXg1e9UtvWW52hdMKf3U_osemiHjHV218g/viewform?usp=publish-editor">Googleフォーム(匿名可)</a>よりご連絡ください。</div>
+
+    <div>
+        <h3>想定される質問</h3>
+        <p>Q : CSVファイルにはに学生氏名や学生番号等が載っているが、開発者はこれらの情報を取得しているのではないか</p>
+        <p>しておりません。気になる方は該当部分を削除し、空白行が生じないようにしてください。例えば、Excelで行う場合「1B,2B,1D,2D」セルの数値のみを削除してください。先頭から4行は無視する仕様になっているため、空白行を詰めると正常に動作しません。</p>
+    </div>
+
+    <div>
+        <h3>プライバシーポリシー</h3>
+        <p>当サイトでは、サイトの利用状況の調査や分析ためにGoogle Analytics を使用しています。Google Analytics は、Cookie を使用してトラフィックデータを収集しますが、個人を特定する情報は含まれません。詳しくは、<a href="https://policies.google.com/technologies/partner-sites?hl=ja">Google のポリシー</a>をご覧ください。ユーザーは本サイトを利用することでcookieの使用に許可を与えたものとみなします。Google Analyticsによるデータ利用を無効するには<a href="https://tools.google.com/dlpage/gaoptout?hl=ja">Google Analyticsオプトアウトアドオン</a>をご利用ください。</p>
+    </div>
+
+    <script>
+        const orderedCategories = [
+            "英語",
+            "第二外国語",
+            "SDGs入門",
+            "健康・スポーツ/文化・芸術等",
+            "情報科学",
+            "数理・データサイエンス",
+            "人文社会科学分野",
+            "自然科学分野",
+            "学際分野",
+            "社会人力養成科目",
+
+            // 材料エネルギー学部
+            "基盤科目(材エネ)",
+            "専門必修/専門選択科目(材エネ)",
+            //
+            
+            // 総合理工学部(2024以前)
+            "自然科学系学部共通科目",
+            "基盤科目(総理)",
+            "専門必修/専門選択/専門自由科目(総理)",
+            //
+            
+            //総合理工学部(2025以降)
+            "理工共通基礎科目",
+            "理工社会実装教育科目",
+            "専門人材教育科目",
+            //
+            
+            "全額開放科目",
+            "教職・学芸員",
+            "分類漏れ",
+        ]
+
+        async function uploadCsv() {
+            const fileInput = document.getElementById("csvFile");
+            const facultyInput = document.getElementById("faculty");
+            const gradeInput = document.getElementById("grade");
+
+            if (fileInput.files.length === 0) return alert("ファイルを選択してください");
+
+            const formData = new FormData();
+            formData.append('file',fileInput.files[0]);
+            formData.append('faculty',facultyInput.value);
+            formData.append('grade',gradeInput.value);
+
+            try {
+                const response = await fetch('/api/transform', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('変換に失敗しました');
+
+                const blob = await response.blob();
+
+                const text = await blob.text();
+                const result = JSON.parse(text);
+                
+                const resultArea = document.getElementById('resultArea');
+                resultArea.innerHTML= '';
+
+                const table = document.createElement('table');
+                table.border = "1";
+
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>授業区分</th>
+                            <th>合計単位数</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>    
+                `;
+
+                const tbody = table.querySelector('tbody');
+
+                let allCreditSum = 0;
+                let flag = false;
+
+                for (const categoryName of orderedCategories) {
+                    const data = result[categoryName];
+                    if(!data) continue;
+
+                    if (data.creditFlag) flag = true;
+                    const asterisk = data.creditFlag ? "※" : "";
+                    const innerWarning = data.creditFlag ? '<span style="color: #dc3545; font-weight: bold;">※</span>が付いている授業は単位数を取得できなかったため、<b>0</b>で表示・計算しています' : "";
+
+                    const row = document.createElement('tr');
+
+                    const courseListItems = data.courses.map(course => {
+                        const courseAsterisk = course.flag ? "※" : "";
+                        const warningStyleHead = course.flag ? '<span style="color: #dc3545; font-weight: bold;">' : "";
+                        const warningStyleTail = course.flag ? '</span>' : "";
+                        return `<li>${warningStyleHead}${course.name} (${course.credit ?? 0}単位${courseAsterisk})${warningStyleTail} <small style="color:#666;">[${course.code}]</small></li>`
+                    }).join('');
+
+                    row.innerHTML = `
+                        <td><strong>${categoryName}</strong></td>
+                        <td>
+                            <details>
+                                <summary style="cursor: pointer; color: #0066cc; font-weight: bold; padding-left: 2px">
+                                    ${data.totalCredits} 単位${asterisk} (n = ${data.courseCount})
+                                </summary>
+                                <div style="margin-top: 8px; padding-left: 0px; text-align: left;">
+                                    ${innerWarning}
+                                    <ul style="list-style: none;margin-top: 8px;padding-left: 0px; text-align: left;">
+                                        ${courseListItems || '<li>該当する授業がありません</li>'}
+                                    </ul>
+                                </div>
+                            </details>
+                        </td>
+                    `;
+                    
+                    allCreditSum += data.totalCredits;
+                    tbody.appendChild(row);
+                }
+
+                // // orderdCategoriesに書き忘れたものを出力する
+                for (const [categoryName, data] of Object.entries(result)) {
+                    if (!orderedCategories.includes(categoryName)){
+                        if (data.creditFlag) flag = true;
+                        const asterisk = data.creditFlag ? "※" : "";
+                        const innerWarning = data.creditFlag ? '<span style="color: #dc3545; font-weight: bold;">※</span>が付いている授業は単位数を取得できなかったため、<b>0</b>で表示・計算しています' : "";
+                        const row = document.createElement('tr');
+
+                        const courseListItems = data.courses.map(course => {
+                            const courseAsterisk = course.flag ? "※" : "";
+                            const warningStyleHead = course.flag ? '<span style="color: #dc3545; font-weight: bold;">' : "";
+                            const warningStyleTail = course.flag ? '</span>' : "";
+                        return `<li>${warningStyleHead}${course.name} (${course.credit ?? 0}単位${courseAsterisk})${warningStyleTail} <small style="color:#666;">[${course.code}]</small></li>`
+                        }).join('');
+
+                        row.innerHTML = `
+                            <td><strong>${categoryName}</strong></td>
+                            <td>
+                                <details>
+                                    <summary style="cursor: pointer; color: #0066cc; font-weight: bold; padding-left: 2px;">
+                                        ${data.totalCredits} 単位${asterisk} (n = ${data.courseCount})
+                                    </summary>
+                                    <div style="margin-top: 8px; padding-left: 0px; text-align: left;">
+                                        ${innerWarning}
+                                        <ul style="list-style: none;margin-top: 8px;padding-left: 0px; text-align: left;">
+                                            ${courseListItems || '<li>該当する授業がありません</li>'}
+                                        </ul>
+                                    </div>
+                                </details>
+                            </td>
+                        `;
+
+                        allCreditSum += data.totalCredits;
+                        tbody.appendChild(row);
+                    }
+                }
+
+                const tr = document.createElement("tr");
+                const tr2 = document.createElement("tr");
+                const asterisk = flag ? "※" : "";
+                tr.innerHTML = `
+                    <td>全授業合計</td>
+                    <td style="text-align: center;">${allCreditSum}${asterisk}</td>
+                `;
+                tr2.innerHTML = `
+                    <td>全授業合計(教職・学芸員を除く)</td>
+                    <td style="text-align: center;">${allCreditSum - result["教職・学芸員"].totalCredits}${asterisk}</td>
+                `;
+                tbody.appendChild(tr);
+                tbody.appendChild(tr2);
+                resultArea.appendChild(table);
+
+                const bottomText = document.createElement('div');
+                bottomText.innerHTML = "※単位数が取得できていない授業を単位数0で計算しているため、その分少なく表示されています。";
+                bottomText.style.fontWeight = "bold"
+                resultArea.appendChild(bottomText);
+
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+
+    </script>
+</body>
+
+</html>
