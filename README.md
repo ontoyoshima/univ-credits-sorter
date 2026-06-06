@@ -22,7 +22,7 @@
    - 時間割コード＋年度で単位数を一意に取得
 4. 単位区分ごとに集計し、結果を出力
 
-<img width="426" height="240" alt="Image" src="https://github.com/user-attachments/assets/da3a8754-028c-4faa-a8a0-6ec89220e532" />
+<img width="639" height="360" alt="Image" src="https://github.com/user-attachments/assets/da3a8754-028c-4faa-a8a0-6ec89220e532" />
 
 > [!CAUTION]
 > テストデータにより確認を行っていますが、出力結果の正確性について保証するものではありません。
