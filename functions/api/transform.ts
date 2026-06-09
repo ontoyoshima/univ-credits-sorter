@@ -53,7 +53,7 @@ export function classify(code: string, faculty: string, grade: number): string {
       else if (code.startsWith("TE")) {
         return "理工社会実装教育科目";
       }
-      else if (startsWithAny(code,["TF", "TG", "TH", "TJ"])) {
+      else if (startsWithAny(code, ["TF", "TG", "TH", "TJ"])) {
         return "専門人材教育科目";
       }
     }
@@ -98,17 +98,17 @@ export function classify(code: string, faculty: string, grade: number): string {
   // }
 
   // 共通
-  if (startsWithAny(code,["A1", "A2", "A3", "A5", "A6", "UAA"])) {
+  if (startsWithAny(code, ["A1", "A2", "A3", "A5", "A6", "UAA"])) {
     return "英語";
   }
-  else if (startsWithAny(code,["A0", "UAB", "UAC", "UAD", "UAE"])) {
+  else if (startsWithAny(code, ["A0", "UAB", "UAC", "UAD", "UAE"])) {
     return "第二外国語";
   }
   // 2024年度以降
   else if (grade >= 2024 && code.startsWith("UJC")) {
     return "SDGs入門";
   }
-  else if (startsWithAny(code,["B", "QBE", "QBG"])) {
+  else if (startsWithAny(code, ["B", "QBE", "QBG"])) {
     if (grade < 2024 || faculty !== "material") {
       return "健康・スポーツ/文化・芸術等";
     }
@@ -119,19 +119,19 @@ export function classify(code: string, faculty: string, grade: number): string {
       return "学際分野";
     }
   }
-  else if (startsWithAny(code,["C", "SC"])) {
+  else if (startsWithAny(code, ["C", "SC"])) {
     return "情報科学"
   }
-  else if (startsWithAny(code,["D0A", "D9A", "SD"])) {
+  else if (startsWithAny(code, ["D0A", "D9A", "SD"])) {
     return "数理・データサイエンス"
   }
-  else if (startsWithAny(code,["E0", "SE", "SJE", "UE", "UJE", "PE", "QE"])) {
+  else if (startsWithAny(code, ["E0", "SE", "SJE", "UE", "UJE", "PE", "QE"])) {
     return "人文社会科学分野";
   }
-  else if (startsWithAny(code,["F0", "SF", "SJF", "UF", "UJF", "PF", "PJF", "QF"])) {
+  else if (startsWithAny(code, ["F0", "SF", "SJF", "UF", "UJF", "PF", "PJF", "QF"])) {
     return "自然科学分野";
   }
-  else if (startsWithAny(code,["G0", "SG", "SH", "UG", "UH", "UJG", "PG", "PH", "PJG", "QG", "QH", "QJ"])) {
+  else if (startsWithAny(code, ["G0", "SG", "SH", "UG", "UH", "UJG", "PG", "PH", "PJG", "QG", "QH", "QJ"])) {
     return "学際分野";
   }
   // 2023年度以前のみ
@@ -184,7 +184,7 @@ export const onRequestPost: PagesFunction<{ MY_DATA: KVNamespace }> = async (con
 
     if (!csvText) return new Response("Error: ファイルが空です", { status: 400 });
 
-    const lines = csvText.split(/\r?\n/).filter(line => line.length > 0);
+    const lines = csvText.split(/\r?\n/);
 
     // 行数チェック
     if (lines.length < 5) {
@@ -199,11 +199,11 @@ export const onRequestPost: PagesFunction<{ MY_DATA: KVNamespace }> = async (con
 
       const baseLine = line.split('\t')[0];
 
-      let cleanedLine = baseLine.trim().replace(/^"|"$/g, '');
+      let cleanedLine = baseLine.trim().replaceAll('"', "");
 
       const columns = cleanedLine.split(',');
 
-      if(columns[7] !== "合"){
+      if (columns[7] !== "合") {
         return null;
       }
 
@@ -212,21 +212,21 @@ export const onRequestPost: PagesFunction<{ MY_DATA: KVNamespace }> = async (con
 
       const unit = courseMap.get(targetCode);
 
-      const category = classify(targetCode,facultyVal,gradeVal);
+      const category = classify(targetCode, facultyVal, gradeVal);
 
-      const stat = categoryMap.get(category) || { totalCredits: 0, courseCount: 0, courses: [], creditFlag: false};
+      const stat = categoryMap.get(category) || { totalCredits: 0, courseCount: 0, courses: [], creditFlag: false };
 
-      if (unit !== undefined){
+      if (unit !== undefined) {
         stat.totalCredits += parseFloat(unit);
-        stat.courses.push({ name: targetClassName, credit: parseFloat(unit), code: targetCode});
+        stat.courses.push({ name: targetClassName, credit: parseFloat(unit), code: targetCode });
       }
-      else{
+      else {
         stat.creditFlag = true;
-        stat.courses.push({ name: targetClassName, credit: 0.0, code: targetCode, flag: true});
+        stat.courses.push({ name: targetClassName, credit: 0.0, code: targetCode, flag: true });
       }
       stat.courseCount += 1;
 
-      categoryMap.set(category,stat);
+      categoryMap.set(category, stat);
 
       return `${line},${unit || "0.0"}`;
     }).filter(line => line !== null);
@@ -244,7 +244,7 @@ export const onRequestPost: PagesFunction<{ MY_DATA: KVNamespace }> = async (con
 
     const resultObject = Object.fromEntries(categoryMap);
 
-    return new Response(JSON.stringify(resultObject),{
+    return new Response(JSON.stringify(resultObject), {
       headers: {
         "Content-Type": "application/json; charset=ut-8"
       }

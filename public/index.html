@@ -242,7 +242,7 @@
                 `;
                 tr2.innerHTML = `
                     <td>全授業合計(教職・学芸員を除く)</td>
-                    <td style="text-align: center;">${allCreditSum - result["教職・学芸員"].totalCredits}${asterisk}</td>
+                    <td style="text-align: center;">${allCreditSum - result["教職・学芸員"]?.totalCredits}${asterisk}</td>
                 `;
                 tbody.appendChild(tr);
                 tbody.appendChild(tr2);
@@ -254,6 +254,7 @@
                 resultArea.appendChild(bottomText);
 
             } catch (err) {
+                console.error(err);
                 alert(err.message);
             }
         };
