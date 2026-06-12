@@ -22,7 +22,12 @@
 			"binding": "MY_DATA",
 			"id": "aea647641f544d3dbc9a9ea6e4096beb"
 		}
-	]
+	],
+
+	// for Sentry
+	"compatibility_flags": ["nodejs_compat"],
+	"upload_source_maps": true
+	
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/cloudflare";
+
 // csvから取得するデータの型
 interface ClassData {
   code: string;
@@ -150,7 +152,6 @@ export function classify(code: string, faculty: string, grade: number): string {
 
 export const onRequestPost: PagesFunction<{ MY_DATA: KVNamespace }> = async (context) => {
   const { request, env } = context;
-
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -250,8 +251,11 @@ export const onRequestPost: PagesFunction<{ MY_DATA: KVNamespace }> = async (con
       }
     });
 
-  } catch (err: any) {
-    // 500エラーの内容を具体的にブラウザへ返す
-    return new Response(`Server Crash Error: ${err.name} - ${err.message}\nStack: ${err.stack}`, { status: 500 });
+  } catch (err: unknown) {
+    Sentry.withScope((scope) => {
+      scope.setExtra("error_message", err instanceof Error ? err.message : String(err));
+      Sentry.captureException(err);
+    });
+    return new Response("Internal Server Error", { status: 500 });
   }
 };

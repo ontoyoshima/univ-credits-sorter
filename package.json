@@ -3,12 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "deploy": "wrangler deploy",
+    "deploy": "wrangler deploy --outdir dist --upload-source-maps --var SENTRY_RELEASE:$(sentry-cli releases propose-version)",
     "dev": "wrangler dev",
-    "start": "wrangler dev"
+    "start": "wrangler dev",
+    "sentry:sourcemaps": "_SENTRY_RELEASE=$(sentry-cli releases propose-version) && sentry-cli releases new $_SENTRY_RELEASE --org=ontoyoshima --project=node-cloudflare-workers && sentry-cli sourcemaps upload --org=ontoyoshima --project=node-cloudflare-workers --release=$_SENTRY_RELEASE --strip-prefix 'dist\\..' dist",
+    "postdeploy": "npm run sentry:sourcemaps"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260510.1",
+    "@sentry/cli": "^2.58.6",
     "wrangler": "^4.87.0"
+  },
+  "dependencies": {
+    "@sentry/cloudflare": "^10.57.0"
   }
 }
